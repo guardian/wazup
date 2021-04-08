@@ -1,3 +1,3 @@
-# Up The Wazuh
+# Wazup
 
 Automated deployment of Wazuh configuration files
