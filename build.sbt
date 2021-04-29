@@ -5,11 +5,12 @@ ThisBuild / organizationName := "example"
 
 val awsSdkVersion = "2.16.25"
 
-// TODO: make sure you can explain the percentage signs in the dependencies list
 lazy val root = (project in file("."))
   .settings(
     name := "wazup",
     libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % "1.0.5",
+      "dev.zio" %% "zio-process" % "0.3.0",
       "software.amazon.awssdk" % "s3" % awsSdkVersion,
       "software.amazon.awssdk" % "auth" % awsSdkVersion,
       "software.amazon.awssdk" % "ssm" % awsSdkVersion,

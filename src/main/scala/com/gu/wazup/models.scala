@@ -15,13 +15,17 @@ case class WazuhParameters(
   umbrellaRoleArn: Option[String],
 )
 
-// TODO: consider switching from tuples to case classes
 case class WazuhFiles(
   ossecConf: String,
   // decoders/ contains one or more files
-  decoders: List[(String, String)],
+  decoders: List[ConfigFile],
   // lists/ contains one or more files
-  lists: List[(String, String)],
+  lists: List[ConfigFile],
   // rules/ contains one or more files
-  rules: List[(String, String)],
+  rules: List[ConfigFile],
+)
+
+case class ConfigFile(
+  filename: String,
+  content: String,
 )
