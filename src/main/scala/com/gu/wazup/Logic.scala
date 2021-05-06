@@ -25,6 +25,17 @@ object Logic {
     ???
   }
 
+  // Determine what type of node this is, by one of these options:
+    // 1. Check is our IP matches coordinatorIP (current selection)
+    // 2. Lookup the instance tags for a particular set
+    // 3. lookup value from /etc/nodetype
+  def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
+      instanceIp match {
+        case parameters.coordinatorIP => Leader
+        case _ => Worker
+      }
+  }
+
   // Only one instance should ingest logs from GCP and AWS
   private[logic] def removeWodleSections(ossecConf: String): String = {
     ???
