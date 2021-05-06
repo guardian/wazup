@@ -3,7 +3,7 @@ package com.gu.wazup.aws
 import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, InstanceProfileCredentialsProvider, ProfileCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
-import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 
 object AWS {
@@ -16,8 +16,8 @@ object AWS {
       .build()
   }
 
-  def s3Client(profile: String, region: Region): S3AsyncClient = {
-    S3AsyncClient.builder()
+  def s3Client(profile: String, region: Region): S3Client = {
+    S3Client.builder()
       .credentialsProvider(credentialsProvider(profile))
       .region(region)
       .build()

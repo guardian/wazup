@@ -3,7 +3,7 @@ package com.gu.wazup
 import com.gu.wazup.aws.AWS
 import software.amazon.awssdk.regions.Region
 import zio.console._
-import zio.{ExitCode, IO, URIO, ZIO}
+import zio.{ExitCode, URIO, ZIO}
 
 
 object Main extends zio.App {
@@ -14,11 +14,26 @@ object Main extends zio.App {
   def run(args: List[String]): URIO[Console, ExitCode] =
     wazup.forever.exitCode
 
-  val wazup: ZIO[Console, Serializable, Unit] =
-    for {
-      _    <- putStrLn("Hello! What is your name?")
-      name <- getStrLn
-      _    <- putStrLn(s"Hello, ${name}, welcome to ZIO!")
-    } yield ()
+  private val bucket = "BUCKET"
+  private val prefix = "REPO/wazuh/etc/"
+
+  val wazup: ZIO[Console, Serializable, Unit] = {
+    val result = for {
+      wazuhFiles <- Logic.fetchFiles(s3Client, bucket, prefix)
+      parameters <- Logic.fetchParameters(systemsManagerClient, "STACK/STAGE/")
+      wazuhParameters = Logic.parseParameters(parameters)
+      nodeType = Logic.getNodeType("ADDRESS", wazuhParameters)
+      newConf <- Logic.createConf(wazuhFiles, wazuhParameters, nodeType)
+      currentConf <- Logic.getCurrentConf("/var/ossec/etc/")
+      shouldUpdate = Logic.hasChanges(newConf, currentConf)
+      // TODO: add CloudWatch logging step here
+      _ <- ZIO.when(shouldUpdate)(Logic.writeConf(newConf))
+      // TODO: add CloudWatch logging step here
+      returnCode <- ZIO.when(shouldUpdate)(Logic.restartWazuh())
+    } yield returnCode
+
+    // TODO: replace println with logging to CloudWatch
+    result.fold(err => println(err), identity)
+  }
 
 }
