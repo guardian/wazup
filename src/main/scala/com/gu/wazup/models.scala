@@ -1,6 +1,10 @@
 package com.gu.wazup
 
 
+sealed trait NodeType
+case object Leader extends NodeType
+case object Worker extends NodeType
+
 case class WazuhConf(
   wazuhParameters: WazuhParameters,
   wazuhFiles: WazuhFiles,
