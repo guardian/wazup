@@ -59,13 +59,22 @@ object Logic  extends LazyLogging {
     // 1. Replace value of 'node_name' with unique identifier
         // Each node of the cluster must have a unique name.
         // If two nodes share the same name, one of them will be rejected.
-    // 2. Replace value of 'key' with the clusterKey value
-        // This key must be the same for all of the nodes of the cluster.
-    // 3. Replace value of 'node' with the coordinatorIP value
+        // Can new workers have the same name as historical ones that have left the cluster?
+    val newConf = wazuhFiles.ossecConf
+      .replaceAll("<node_name>.+</node_name>", s"<node_name>${nodeType.toString.toLowerCase}</node_name>")
+      // 2. Replace value of 'key' with the clusterKey value
+      // This key must be the same for all of the nodes of the cluster.
+      .replaceAll("<key>.+</key>", s"<key>${parameters.wazuhClusterKey.getOrElse("")}</key>")
+      // 3. Replace value of 'node' with the coordinatorIP value
+      .replaceAll("<node>.+</node>", s"<node>${parameters.coordinatorIP.getOrElse("")}</node>")
 
-    // 4. If NodeType is not Leader then removeWodleSections
-
-    ???
+    // If NodeType is not Leader then removeSections
+    if (nodeType == Worker) {
+      wazuhFiles.copy(
+        ossecConf = newConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
+          .replaceAll("<gcp-pubsub>.+</gcp-pubsub>", "")
+      )
+    } else wazuhFiles.copy(ossecConf = newConf)
   }
 
   def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
