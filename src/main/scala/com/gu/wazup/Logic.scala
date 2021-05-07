@@ -72,7 +72,7 @@ object Logic  extends LazyLogging {
     if (nodeType == Worker) {
       wazuhFiles.copy(
         ossecConf = newConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
-          .replaceAll("<gcp-pubsub>.+</gcp-pubsub>", "")
+          .replaceAll("[\\s]*<gcp-pubsub>(?s)(.*)</gcp-pubsub>", "")
       )
     } else wazuhFiles.copy(ossecConf = newConf)
   }
