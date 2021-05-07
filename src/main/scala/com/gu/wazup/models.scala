@@ -11,9 +11,9 @@ case class WazuhConf(
 )
 
 case class WazuhParameters(
-  wazuhClusterKey: String,
-  coordinatorIP: String,
-  agentSecretArn: String,
+  wazuhClusterKey: Option[String],
+  coordinatorIP: Option[String],
+  agentSecretArn: Option[String],
   cloudtrailRoleArn: Option[String],
   guarddutyRoleArn: Option[String],
   umbrellaRoleArn: Option[String],
@@ -22,11 +22,11 @@ case class WazuhParameters(
 case class WazuhFiles(
   ossecConf: String,
   // decoders/ contains one or more files
-  decoders: List[ConfigFile],
+  decoders: List[ConfigFile] = List.empty,
   // lists/ contains one or more files
-  lists: List[ConfigFile],
+  lists: List[ConfigFile] = List.empty,
   // rules/ contains one or more files
-  rules: List[ConfigFile],
+  rules: List[ConfigFile] = List.empty,
 )
 
 case class ConfigFile(

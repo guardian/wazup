@@ -44,10 +44,10 @@ object Logic  extends LazyLogging {
     WazuhParameters(
       // TODO: should missing parameters raise an exception?
       // what do we want to happen if the parameter is missing?
-      // validate params and notify (CloudWatch log) if
-      parameters.getOrElse("wazuhClusterKey", ""),
-      parameters.getOrElse("coordinatorIP", ""),
-      parameters.getOrElse("agentSecretArn", ""),
+      // validate params and notify (CloudWatch log)
+      parameters.get("wazuhClusterKey"),
+      parameters.get("coordinatorIP"),
+      parameters.get("agentSecretArn"),
       parameters.get("cloudtrailRoleArn"),
       parameters.get("guarddutyRoleArn"),
       parameters.get("umbrellaRoleArn"),
@@ -55,7 +55,7 @@ object Logic  extends LazyLogging {
   }
 
   // TODO: ossec.conf should be valid XML, can we return XML or add a method to validate the conf?
-  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType): IO[String, WazuhFiles] = {
+  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType): WazuhFiles = {
     // 1. Replace value of 'node_name' with unique identifier
         // Each node of the cluster must have a unique name.
         // If two nodes share the same name, one of them will be rejected.
@@ -69,13 +69,13 @@ object Logic  extends LazyLogging {
   }
 
   def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
-    if (instanceIp == parameters.coordinatorIP) Leader
+    if (parameters.coordinatorIP.contains(instanceIp)) Leader
     else Worker
   }
 
   // Only the leader instance should ingest logs from GCP and AWS
   // TODO: example input and outputs in resources
-  def removeWodleSections(ossecConf: String): String = {
+  def configureWorker(ossecConf: String): String = {
     // remove <wodle name="aws-s3"> and remove <gcp-pubsub>
     ???
   }
