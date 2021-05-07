@@ -13,7 +13,6 @@ case class WazuhConf(
 case class WazuhParameters(
   wazuhClusterKey: Option[String],
   coordinatorIP: Option[String],
-  agentSecretArn: Option[String],
   cloudtrailRoleArn: Option[String],
   guarddutyRoleArn: Option[String],
   umbrellaRoleArn: Option[String],

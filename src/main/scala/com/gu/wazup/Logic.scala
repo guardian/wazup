@@ -47,7 +47,6 @@ object Logic  extends LazyLogging {
       // validate params and notify (CloudWatch log)
       parameters.get("wazuhClusterKey"),
       parameters.get("coordinatorIP"),
-      parameters.get("agentSecretArn"),
       parameters.get("cloudtrailRoleArn"),
       parameters.get("guarddutyRoleArn"),
       parameters.get("umbrellaRoleArn"),
@@ -68,13 +67,9 @@ object Logic  extends LazyLogging {
       // 3. Replace value of 'node' with the coordinatorIP value
       .replaceAll("<node>.+</node>", s"<node>${parameters.coordinatorIP.getOrElse("")}</node>")
 
-    // If NodeType is not Leader then removeSections
-    if (nodeType == Worker) {
-      wazuhFiles.copy(
-        ossecConf = newConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
-          .replaceAll("[\\s]*<gcp-pubsub>(?s)(.*)</gcp-pubsub>", "")
-      )
-    } else wazuhFiles.copy(ossecConf = newConf)
+    // Only the Leader should ingest logs from GCP and AWS
+    if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
+    else wazuhFiles.copy(ossecConf = newConf)
   }
 
   def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
@@ -82,14 +77,12 @@ object Logic  extends LazyLogging {
     else Worker
   }
 
-  // Only the leader instance should ingest logs from GCP and AWS
-  // TODO: example input and outputs in resources
   def configureWorker(ossecConf: String): String = {
-    // remove <wodle name="aws-s3"> and remove <gcp-pubsub>
-    ???
+    ossecConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
+      .replaceAll("[\\s]*<gcp-pubsub>(?s)(.*)</gcp-pubsub>", "")
+      .replaceAll("[\\s]*<wodle name=\"aws-s3\">(?s)(.*)</wodle>", "")
   }
 
-  // if it is the first time the service is running, the current files may be None
   // how do we tell the difference between populated and unpopulated files
   // TODO: decide if current conf should always be read from disk or cached?
   def getCurrentConf(path: String): IO[String, WazuhFiles] = {
