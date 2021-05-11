@@ -6,9 +6,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.{Blocking, effectBlocking}
-import zio.{IO, ZIO}
+import zio.process.{Command, CommandError}
+import zio.{ExitCode, IO, ZIO}
 
-import java.io.File
+import java.io.{BufferedWriter, File, FileWriter}
 import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
@@ -97,16 +98,18 @@ object Logic  extends LazyLogging {
   }
 
   // TODO: decide if it would be helpful for this to indicate success / fail
-  def writeConf(wazuhFiles: WazuhFiles): IO[String, Unit] = {
-    ???
+  def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, Unit] = {
+    writeTextFile(ConfigFile(s"$path/ossec.conf", wazuhFiles.ossecConf))
   }
 
   // should only be called if the conf has changed and should ideally return the status code
   // TODO: check if we need to poll to find out when restart is complete
   // TODO: check if sudo is needed to restart and work out how to avoid running as root
   // TODO: Consider if wazup should be responsible for running wazuh-manager entirely
-  def restartWazuh(): IO[String, Unit] = {
-    ???
+  def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
+    Command("systemctl", "restart", "wazuh-manager").run
+      .flatMap(process => process.exitCode)
+
   }
 
   def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
@@ -120,6 +123,20 @@ object Logic  extends LazyLogging {
           source.close()
         }
       } else None
+    }.refineOrDie {
+      case NonFatal(t) => t.getMessage
+    }
+  }
+
+  def writeTextFile(configFile: ConfigFile): ZIO[Blocking, String, Unit] = {
+    effectBlocking {
+      val file = new File(configFile.filename)
+      val writer = new BufferedWriter(new FileWriter(file))
+      try {
+        writer.write(configFile.content)
+      } finally {
+        writer.close()
+      }
     }.refineOrDie {
       case NonFatal(t) => t.getMessage
     }
