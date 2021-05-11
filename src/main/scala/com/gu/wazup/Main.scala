@@ -22,8 +22,8 @@ object Main extends zio.App {
 
   val wazup: ZIO[Console with Blocking, Serializable, Unit] = {
     val result = for {
-      wazuhFiles <- Logic.fetchFiles(s3Client, bucket, bucketPath)
-      parameters <- Logic.fetchParameters(systemsManagerClient, parameterPrefix)
+      wazuhFiles <- AWS.fetchFiles(s3Client, bucket, bucketPath)
+      parameters <- AWS.fetchParameters(systemsManagerClient, parameterPrefix)
       wazuhParameters = Logic.parseParameters(parameters, parameterPrefix)
       // TODO: add validate parameters step and log to CloudWatch the result
       nodeType = Logic.getNodeType("ADDRESS", wazuhParameters)
