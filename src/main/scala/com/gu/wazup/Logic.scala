@@ -1,43 +1,17 @@
 package com.gu.wazup
 
-import com.gu.wazup.aws.S3
-import com.typesafe.scalalogging.LazyLogging
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.ssm.SsmAsyncClient
-import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
+import software.amazon.awssdk.services.ssm.model.GetParametersByPathResponse
 import zio.blocking.{Blocking, effectBlocking}
 import zio.process.{Command, CommandError}
-import zio.{ExitCode, IO, ZIO}
+import zio.{ExitCode, ZIO}
 
 import java.io.{BufferedWriter, File, FileWriter}
 import scala.io.Source
 import scala.jdk.CollectionConverters._
-import scala.jdk.FutureConverters._
 import scala.util.control.NonFatal
 
 
-object Logic  extends LazyLogging {
-  // TODO: change left to be a failure so we can return more information
-  def fetchFiles(client: S3Client, bucket: String, prefix: String): ZIO[Blocking, String, WazuhFiles] = {
-    for {
-      ossecConf <- S3.getObjectContent(client, bucket, s"$prefix/ossec.conf")
-      decoders <- S3.listObjects(client, bucket, s"$prefix/decoders/")
-      lists <- S3.listObjects(client, bucket, s"$prefix/lists/")
-      rules <- S3.listObjects(client, bucket, s"$prefix/rules/")
-    } yield WazuhFiles(ossecConf)
-  }
-
-  // TODO: check pagination =- do we want to use getParametersByPathPaginator?
-  def fetchParameters(client: SsmAsyncClient, prefix: String): IO[String, GetParametersByPathResponse] = {
-    val request = GetParametersByPathRequest.builder()
-      .path(prefix)
-      .withDecryption(true)
-      .recursive(true)
-      .build()
-    ZIO.fromFuture(implicit ec => client.getParametersByPath(request).asScala).refineOrDie {
-      case NonFatal(t) => t.getMessage
-    }
-  }
+object Logic {
 
   def parseParameters(response: GetParametersByPathResponse, prefix: String): WazuhParameters = {
     val parameters = response.parameters.asScala.toList.map { param =>
@@ -112,7 +86,7 @@ object Logic  extends LazyLogging {
 
   }
 
-  def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
+  private def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
     effectBlocking {
       val file = new File(fileName)
       if (file.exists) {
@@ -128,7 +102,7 @@ object Logic  extends LazyLogging {
     }
   }
 
-  def writeTextFile(configFile: ConfigFile): ZIO[Blocking, String, Unit] = {
+  private def writeTextFile(configFile: ConfigFile): ZIO[Blocking, String, Unit] = {
     effectBlocking {
       val file = new File(configFile.filename)
       val writer = new BufferedWriter(new FileWriter(file))

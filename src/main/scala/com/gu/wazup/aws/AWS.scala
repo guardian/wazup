@@ -1,10 +1,18 @@
 package com.gu.wazup.aws
 
+import com.gu.wazup.WazuhFiles
 import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, InstanceProfileCredentialsProvider, ProfileCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
+import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
+import zio.blocking.Blocking
+import zio.{IO, ZIO}
+
+import scala.jdk.FutureConverters._
+import scala.util.control.NonFatal
+
 
 object AWS {
 
@@ -35,5 +43,27 @@ object AWS {
       .credentialsProvider(credentialsProvider(profile))
       .region(region)
       .build()
+  }
+
+  // TODO: change left to be a failure so we can return more information
+  def fetchFiles(client: S3Client, bucket: String, prefix: String): ZIO[Blocking, String, WazuhFiles] = {
+    for {
+      ossecConf <- S3.getObjectContent(client, bucket, s"$prefix/ossec.conf")
+      decoders <- S3.listObjects(client, bucket, s"$prefix/decoders/")
+      lists <- S3.listObjects(client, bucket, s"$prefix/lists/")
+      rules <- S3.listObjects(client, bucket, s"$prefix/rules/")
+    } yield WazuhFiles(ossecConf)
+  }
+
+  // TODO: check pagination =- do we want to use getParametersByPathPaginator?
+  def fetchParameters(client: SsmAsyncClient, prefix: String): IO[String, GetParametersByPathResponse] = {
+    val request = GetParametersByPathRequest.builder()
+      .path(prefix)
+      .withDecryption(true)
+      .recursive(true)
+      .build()
+    ZIO.fromFuture(implicit ec => client.getParametersByPath(request).asScala).refineOrDie {
+      case NonFatal(t) => t.getMessage
+    }
   }
 }
