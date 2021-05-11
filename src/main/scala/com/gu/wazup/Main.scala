@@ -18,6 +18,7 @@ object Main extends zio.App {
   private val bucket = "BUCKET"
   private val bucketPath = "REPO/wazuh/etc"
   private val parameterPrefix = "/wazuh/CODE/"
+  private val confPath = "/var/ossec/etc/"
 
   val wazup: ZIO[Console with Blocking, Serializable, Unit] = {
     val result = for {
@@ -27,10 +28,10 @@ object Main extends zio.App {
       // TODO: add validate parameters step and log to CloudWatch the result
       nodeType = Logic.getNodeType("ADDRESS", wazuhParameters)
       newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType)
-      currentConf <- Logic.getCurrentConf("/var/ossec/etc/", List.empty)
+      currentConf <- Logic.getCurrentConf(confPath, List.empty)
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       // TODO: add CloudWatch logging step here
-      _ <- ZIO.when(shouldUpdate)(Logic.writeConf(newConf))
+      _ <- ZIO.when(shouldUpdate)(Logic.writeConf(confPath, newConf))
       // TODO: add CloudWatch logging step here
       returnCode <- ZIO.when(shouldUpdate)(Logic.restartWazuh())
     } yield returnCode
