@@ -5,9 +5,11 @@ import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
+import zio.blocking.{Blocking, effectBlocking}
 import zio.{IO, ZIO}
-import zio.blocking.Blocking
 
+import java.io.File
+import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 import scala.util.control.NonFatal
@@ -21,7 +23,7 @@ object Logic  extends LazyLogging {
       decoders <- S3.listObjects(client, bucket, s"$prefix/decoders/")
       lists <- S3.listObjects(client, bucket, s"$prefix/lists/")
       rules <- S3.listObjects(client, bucket, s"$prefix/rules/")
-    } yield WazuhFiles(ossecConf, List.empty, List.empty, List.empty)
+    } yield WazuhFiles(ossecConf)
   }
 
   // TODO: check pagination =- do we want to use getParametersByPathPaginator?
@@ -85,13 +87,13 @@ object Logic  extends LazyLogging {
 
   // how do we tell the difference between populated and unpopulated files
   // TODO: decide if current conf should always be read from disk or cached?
-  def getCurrentConf(path: String): IO[String, WazuhFiles] = {
-    ???
+  def getCurrentConf(path: String, directories: List[String]): ZIO[Blocking, String, WazuhFiles] = {
+    readTextFile(s"$path/ossec.conf").map(conf => WazuhFiles(conf.getOrElse("")))
   }
 
   // TODO: consider case class that represents the interpolation
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
-    ???
+    incoming.ossecConf != current.ossecConf
   }
 
   // TODO: decide if it would be helpful for this to indicate success / fail
@@ -107,4 +109,19 @@ object Logic  extends LazyLogging {
     ???
   }
 
+  def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
+    effectBlocking {
+      val file = new File(fileName)
+      if (file.exists) {
+        val source = Source.fromFile(fileName)
+        try {
+          Some(source.mkString.trim)
+        } finally {
+          source.close()
+        }
+      } else None
+    }.refineOrDie {
+      case NonFatal(t) => t.getMessage
+    }
+  }
 }
