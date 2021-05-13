@@ -20,12 +20,7 @@ case class WazuhParameters(
 
 case class WazuhFiles(
   ossecConf: String,
-  // decoders/ contains one or more files
-  decoders: List[ConfigFile] = List.empty,
-  // lists/ contains one or more files
-  lists: List[ConfigFile] = List.empty,
-  // rules/ contains one or more files
-  rules: List[ConfigFile] = List.empty,
+  otherConf: List[ConfigFile] = List.empty,
 )
 
 case class ConfigFile(

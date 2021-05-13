@@ -74,7 +74,7 @@ object Logic {
 
   // TODO: decide if it would be helpful for this to indicate success / fail
   def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, Unit] = {
-    writeTextFile(ConfigFile(s"$path/ossec.conf", wazuhFiles.ossecConf))
+    writeTextFile(s"$path/ossec.conf", wazuhFiles.ossecConf)
   }
 
   // should only be called if the conf has changed and should ideally return the status code
@@ -101,12 +101,12 @@ object Logic {
     }
   }
 
-  private def writeTextFile(configFile: ConfigFile): ZIO[Blocking, String, Unit] = {
+  private def writeTextFile(filePath: String, content: String): ZIO[Blocking, String, Unit] = {
     effectBlocking {
-      val file = new File(configFile.filename)
+      val file = new File(filePath)
       val writer = new BufferedWriter(new FileWriter(file))
       try {
-        writer.write(configFile.content)
+        writer.write(content)
       } finally {
         writer.close()
       }
