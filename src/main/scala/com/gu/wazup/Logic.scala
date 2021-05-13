@@ -21,8 +21,6 @@ object Logic {
 
     WazuhParameters(
       // TODO: should missing parameters raise an exception?
-      // what do we want to happen if the parameter is missing?
-      // validate params and notify (CloudWatch log)
       parameters.get("wazuhClusterKey"),
       parameters.get("coordinatorIP"),
       parameters.get("cloudtrailRoleArn"),
@@ -31,21 +29,22 @@ object Logic {
     )
   }
 
+  def getWazuhFiles(configFiles: List[ConfigFile], bucketPath: String): Either[String, WazuhFiles] = {
+    configFiles.map { file =>
+      file.copy(filename = file.filename.stripPrefix(bucketPath))
+    }.partition(file => file.filename.endsWith("ossec.conf")) match {
+      case (ossecConf :: Nil, otherFiles) => Right(WazuhFiles(ossecConf.content, otherFiles))
+      case (Nil, _) => Left(s"Missing ossec.conf file in $bucketPath")
+      case _ => Left("More than one ossec.conf found")
+    }
+  }
+
   // TODO: ossec.conf should be valid XML, can we return XML or add a method to validate the conf?
   def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String): WazuhFiles = {
-    // 1. Replace value of 'node_name' with unique identifier
-        // Each node of the cluster must have a unique name.
-        // If two nodes share the same name, one of them will be rejected.
-        // Can new workers have the same name as historical ones that have left the cluster?
     val newConf = wazuhFiles.ossecConf
       .replaceAll("<node_name>.+</node_name>", s"<node_name>${nodeType.toString.toLowerCase}-$nodeAddress</node_name>")
-      // 2. Replace value of 'key' with the clusterKey value
-      // This key must be the same for all of the nodes of the cluster.
       .replaceAll("<key>.+</key>", s"<key>${parameters.wazuhClusterKey.getOrElse("")}</key>")
-      // 3. Replace value of 'node' with the coordinatorIP value
       .replaceAll("<node>.+</node>", s"<node>${parameters.coordinatorIP.getOrElse("")}</node>")
-
-    // Only the Leader should ingest logs from GCP and AWS
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
   }
@@ -65,13 +64,10 @@ object Logic {
       .replaceAll("[\\s]*<wodle name=\"aws-s3\">(?s)(.*)</wodle>", "")
   }
 
-  // how do we tell the difference between populated and unpopulated files
-  // TODO: decide if current conf should always be read from disk or cached?
   def getCurrentConf(path: String, directories: List[String]): ZIO[Blocking, String, WazuhFiles] = {
     readTextFile(s"$path/ossec.conf").map(conf => WazuhFiles(conf.getOrElse("")))
   }
 
-  // TODO: consider case class that represents the interpolation
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
     incoming.ossecConf != current.ossecConf
   }
@@ -84,11 +80,9 @@ object Logic {
   // should only be called if the conf has changed and should ideally return the status code
   // TODO: check if we need to poll to find out when restart is complete
   // TODO: check if sudo is needed to restart and work out how to avoid running as root
-  // TODO: Consider if wazup should be responsible for running wazuh-manager entirely
   def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
     Command("systemctl", "restart", "wazuh-manager").run
       .flatMap(process => process.exitCode)
-
   }
 
   private def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
