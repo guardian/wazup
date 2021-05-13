@@ -1,9 +1,8 @@
 package com.gu.wazup
 
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathResponse
+import zio.ZIO
 import zio.blocking.{Blocking, effectBlocking}
-import zio.process.{Command, CommandError}
-import zio.{ExitCode, ZIO}
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetAddress
@@ -29,12 +28,12 @@ object Logic {
     )
   }
 
-  def getWazuhFiles(configFiles: List[ConfigFile], bucketPath: String): Either[String, WazuhFiles] = {
+  def getWazuhFiles(configFiles: List[ConfigFile], path: String): Either[String, WazuhFiles] = {
     configFiles.map { file =>
-      file.copy(filename = file.filename.stripPrefix(bucketPath))
+      file.copy(filename = file.filename.stripPrefix(path))
     }.partition(file => file.filename.endsWith("ossec.conf")) match {
       case (ossecConf :: Nil, otherFiles) => Right(WazuhFiles(ossecConf.content, otherFiles))
-      case (Nil, _) => Left(s"Missing ossec.conf file in $bucketPath")
+      case (Nil, _) => Left(s"Could not retrieve ossec.conf from $path")
       case _ => Left("More than one ossec.conf found")
     }
   }
@@ -64,44 +63,25 @@ object Logic {
       .replaceAll("[\\s]*<wodle name=\"aws-s3\">(?s)(.*)</wodle>", "")
   }
 
-  def getCurrentConf(path: String, directories: List[String]): ZIO[Blocking, String, WazuhFiles] = {
-    readTextFile(s"$path/ossec.conf").map(conf => WazuhFiles(conf.getOrElse("")))
-  }
-
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
     incoming.ossecConf != current.ossecConf
   }
 
-  // TODO: decide if it would be helpful for this to indicate success / fail
-  def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, Unit] = {
-    writeTextFile(s"$path/ossec.conf", wazuhFiles.ossecConf)
-  }
-
-  // should only be called if the conf has changed and should ideally return the status code
-  // TODO: check if we need to poll to find out when restart is complete
-  // TODO: check if sudo is needed to restart and work out how to avoid running as root
-  def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
-    Command("systemctl", "restart", "wazuh-manager").run
-      .flatMap(process => process.exitCode)
-  }
-
-  private def readTextFile(fileName: String): ZIO[Blocking, String, Option[String]] = {
+  def readTextFile(fileName: String): ZIO[Blocking, String, String] = {
     effectBlocking {
       val file = new File(fileName)
-      if (file.exists) {
-        val source = Source.fromFile(fileName)
+      val source = Source.fromFile(file)
         try {
-          Some(source.mkString)
+          source.mkString
         } finally {
           source.close()
         }
-      } else None
     }.refineOrDie {
       case NonFatal(t) => t.getMessage
     }
   }
 
-  private def writeTextFile(filePath: String, content: String): ZIO[Blocking, String, Unit] = {
+  def writeTextFile(filePath: String, content: String): ZIO[Blocking, String, Unit] = {
     effectBlocking {
       val file = new File(filePath)
       val writer = new BufferedWriter(new FileWriter(file))
@@ -110,6 +90,22 @@ object Logic {
       } finally {
         writer.close()
       }
+    }.refineOrDie {
+      case NonFatal(t) => t.getMessage
+    }
+  }
+
+  private def listDirectory(directory: File): Array[File] = {
+    val these = directory.listFiles
+    these ++ these.filter(_.isDirectory).flatMap(listDirectory)
+  }
+
+  def listFiles(directory: String): ZIO[Blocking, String, List[String]] = {
+    effectBlocking {
+      listDirectory(new File(directory))
+        .filter(_.isFile)
+        .map(_.getPath)
+        .toList
     }.refineOrDie {
       case NonFatal(t) => t.getMessage
     }
