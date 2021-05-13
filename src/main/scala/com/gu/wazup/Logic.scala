@@ -6,6 +6,7 @@ import zio.process.{Command, CommandError}
 import zio.{ExitCode, ZIO}
 
 import java.io.{BufferedWriter, File, FileWriter}
+import java.net.InetAddress
 import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -31,13 +32,13 @@ object Logic {
   }
 
   // TODO: ossec.conf should be valid XML, can we return XML or add a method to validate the conf?
-  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType): WazuhFiles = {
+  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String): WazuhFiles = {
     // 1. Replace value of 'node_name' with unique identifier
         // Each node of the cluster must have a unique name.
         // If two nodes share the same name, one of them will be rejected.
         // Can new workers have the same name as historical ones that have left the cluster?
     val newConf = wazuhFiles.ossecConf
-      .replaceAll("<node_name>.+</node_name>", s"<node_name>${nodeType.toString.toLowerCase}</node_name>")
+      .replaceAll("<node_name>.+</node_name>", s"<node_name>${nodeType.toString.toLowerCase}-$nodeAddress</node_name>")
       // 2. Replace value of 'key' with the clusterKey value
       // This key must be the same for all of the nodes of the cluster.
       .replaceAll("<key>.+</key>", s"<key>${parameters.wazuhClusterKey.getOrElse("")}</key>")
@@ -47,6 +48,10 @@ object Logic {
     // Only the Leader should ingest logs from GCP and AWS
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
+  }
+
+  def getNodeAddress: ZIO[Blocking, String, String] = {
+    effectBlocking(InetAddress.getLocalHost.getHostAddress).refineOrDie(_.getMessage)
   }
 
   def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {

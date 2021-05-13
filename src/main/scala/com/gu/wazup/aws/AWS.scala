@@ -1,15 +1,17 @@
 package com.gu.wazup.aws
 
-import com.gu.wazup.WazuhFiles
+import com.gu.wazup.{ConfigFile, WazuhFiles}
 import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, InstanceProfileCredentialsProvider, ProfileCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.Blocking
 import zio.{IO, ZIO}
 
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 import scala.util.control.NonFatal
 
