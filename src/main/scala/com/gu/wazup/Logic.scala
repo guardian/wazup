@@ -97,7 +97,7 @@ object Logic {
       if (file.exists) {
         val source = Source.fromFile(fileName)
         try {
-          Some(source.mkString.trim)
+          Some(source.mkString)
         } finally {
           source.close()
         }
