@@ -5,8 +5,9 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.Blocking
-import zio.console.Console
-import zio.{IO, ZIO}
+import zio.console.{Console, putStrLn}
+import zio.process.{Command, CommandError}
+import zio.{ExitCode, IO, ZIO}
 
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
@@ -24,13 +25,13 @@ object Wazup {
       nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
       wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, bucketPath))
       newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress)
-      currentConf <- Logic.getCurrentConf(confPath, List.empty)
+      currentConf <- getCurrentConf(confPath)
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       // TODO: add CloudWatch logging step here
-      _ <- ZIO.when(shouldUpdate)(Logic.writeConf(confPath, newConf))
+      _ <- ZIO.when(shouldUpdate)(writeConf(confPath, newConf))
       // TODO: check ZIO will wait for the conf to be written before restarting
       // TODO: add CloudWatch logging step here
-      returnCode <- ZIO.when(shouldUpdate)(Logic.restartWazuh())
+      returnCode <- ZIO.when(shouldUpdate)(restartWazuh())
     } yield returnCode
 
     // TODO: replace println with logging to CloudWatch
@@ -61,5 +62,30 @@ object Wazup {
     ZIO.fromFuture(implicit ec => client.getParametersByPath(request).asScala).refineOrDie {
       case NonFatal(t) => t.getMessage
     }
+  }
+
+  private def getFileContent(file: String): ZIO[Blocking, String, ConfigFile] = {
+    Logic.readTextFile(file).map(content => ConfigFile(file, content))
+  }
+
+  def getCurrentConf(confPath: String): ZIO[Blocking, String, WazuhFiles] = {
+    for {
+      files <- Logic.listFiles(confPath)
+      configFiles <- ZIO.validatePar(files)(getFileContent).mapError(_.mkString(" "))
+      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, confPath))
+    } yield wazuhFiles
+  }
+
+  // TODO: decide if it would be helpful for this to indicate success / fail
+  def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, Unit] = {
+    Logic.writeTextFile(s"$path/ossec.conf", wazuhFiles.ossecConf)
+  }
+
+  // should only be called if the conf has changed and should ideally return the status code
+  // TODO: check if we need to poll to find out when restart is complete
+  // TODO: check if sudo is needed to restart and work out how to avoid running as root
+  def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
+    Command("systemctl", "restart", "wazuh-manager").run
+      .flatMap(process => process.exitCode)
   }
 }
