@@ -26,8 +26,9 @@ object Main extends zio.App {
       parameters <- AWS.fetchParameters(systemsManagerClient, parameterPrefix)
       wazuhParameters = Logic.parseParameters(parameters, parameterPrefix)
       // TODO: add validate parameters step and log to CloudWatch the result
-      nodeType = Logic.getNodeType("ADDRESS", wazuhParameters)
-      newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType)
+      nodeAddress <- Logic.getNodeAddress
+      nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
+      newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress)
       currentConf <- Logic.getCurrentConf(confPath, List.empty)
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       // TODO: add CloudWatch logging step here
