@@ -47,14 +47,14 @@ class LogicTest extends AnyFreeSpec with Matchers {
     )
 
     "generates the correct configuration for a Leader" in {
-      val testConf = Source.fromResource("ossec/cluster-input.conf").getLines.mkString("\n")
-      val expectedConf = Source.fromResource("ossec/cluster-leader-output.conf").getLines.mkString("\n")
+      val testConf = Source.fromResource("ossec/cluster-input.conf").getLines().mkString("\n")
+      val expectedConf = Source.fromResource("ossec/cluster-leader-output.conf").getLines().mkString("\n")
       Logic.createConf(WazuhFiles(testConf), parameters, Leader, "10.0.0.1") shouldEqual WazuhFiles(expectedConf)
     }
 
     "generates the correct configuration for a Worker" in {
-      val testConf = Source.fromResource("ossec/cluster-input.conf").getLines.mkString("\n")
-      val expectedConf = Source.fromResource("ossec/cluster-worker-output.conf").getLines.mkString("\n")
+      val testConf = Source.fromResource("ossec/cluster-input.conf").getLines().mkString("\n")
+      val expectedConf = Source.fromResource("ossec/cluster-worker-output.conf").getLines().mkString("\n")
       Logic.createConf(WazuhFiles(testConf), parameters, Worker, "10.0.0.1") shouldEqual WazuhFiles(expectedConf)
     }
   }
