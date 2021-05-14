@@ -64,7 +64,6 @@ object Logic {
   }
 
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
-    implicit val fileOrder: Ordering[ConfigFile] = Ordering.by(_.filename)
     incoming.ossecConf != current.ossecConf ||
       incoming.otherConf.toSeq.sorted != current.otherConf.toSeq.sorted
   }

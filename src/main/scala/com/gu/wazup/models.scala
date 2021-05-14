@@ -27,3 +27,6 @@ case class ConfigFile(
   filename: String,
   content: String,
 )
+object ConfigFile {
+  implicit val ordering: Ordering[ConfigFile] = Ordering.by(_.filename)
+}
