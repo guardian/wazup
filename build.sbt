@@ -2,6 +2,14 @@ ThisBuild / scalaVersion     := "2.13.4"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.gu"
 ThisBuild / organizationName := "example"
+ThisBuild / scalacOptions ++= Seq(
+  "-Xfatal-warnings",
+  "-encoding", "UTF-8",
+  "-target:jvm-1.8",
+  "-Ywarn-dead-code",
+  "-deprecation",
+  "-explaintypes",
+)
 
 val awsSdkVersion = "2.16.25"
 
