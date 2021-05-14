@@ -64,12 +64,14 @@ object Logic {
   }
 
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
-    incoming.ossecConf != current.ossecConf
+    implicit val fileOrder: Ordering[ConfigFile] = Ordering.by(_.filename)
+    incoming.ossecConf != current.ossecConf ||
+      incoming.otherConf.toSeq.sorted != current.otherConf.toSeq.sorted
   }
 
-  def readTextFile(fileName: String): ZIO[Blocking, String, String] = {
+  def readFile(filePath: String): ZIO[Blocking, String, String] = {
     effectBlocking {
-      val file = new File(fileName)
+      val file = new File(filePath)
       val source = Source.fromFile(file)
         try {
           source.mkString
@@ -81,9 +83,10 @@ object Logic {
     }
   }
 
-  def writeTextFile(filePath: String, content: String): ZIO[Blocking, String, Unit] = {
+  def writeFile(filePath: String, content: String): ZIO[Blocking, String, Unit] = {
     effectBlocking {
       val file = new File(filePath)
+      file.getParentFile.mkdirs()
       val writer = new BufferedWriter(new FileWriter(file))
       try {
         writer.write(content)

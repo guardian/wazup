@@ -65,24 +65,25 @@ object Wazup {
   }
 
   private def getFileContent(file: String): ZIO[Blocking, String, ConfigFile] = {
-    Logic.readTextFile(file).map(content => ConfigFile(file, content))
+    Logic.readFile(file).map(content => ConfigFile(file, content))
   }
 
-  def getCurrentConf(confPath: String): ZIO[Blocking, String, WazuhFiles] = {
+  def getCurrentConf(path: String): ZIO[Blocking, String, WazuhFiles] = {
     for {
-      files <- Logic.listFiles(confPath)
+      files <- Logic.listFiles(path)
       configFiles <- ZIO.validatePar(files)(getFileContent).mapError(_.mkString(" "))
-      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, confPath))
+      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, path))
     } yield wazuhFiles
   }
 
-  // TODO: decide if it would be helpful for this to indicate success / fail
-  def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, Unit] = {
-    Logic.writeTextFile(s"$path/ossec.conf", wazuhFiles.ossecConf)
+  def writeConf(path: String, wazuhFiles: WazuhFiles): ZIO[Blocking, String, List[Unit]] = {
+    val ossecConf = ConfigFile("ossec.conf", wazuhFiles.ossecConf)
+    ZIO.validatePar(List(ossecConf) ++ wazuhFiles.otherConf)(file => {
+      Logic.writeFile(s"$path/${file.filename}", file.content)
+    }).mapError(_.mkString(" "))
   }
 
   // should only be called if the conf has changed and should ideally return the status code
-  // TODO: check if we need to poll to find out when restart is complete
   // TODO: check if sudo is needed to restart and work out how to avoid running as root
   def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
     Command("systemctl", "restart", "wazuh-manager").run
