@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.Blocking
-import zio.console.{Console, putStrLn}
+import zio.console.Console
 import zio.process.{Command, CommandError}
 import zio.{ExitCode, IO, ZIO}
 
@@ -15,10 +15,10 @@ import scala.util.control.NonFatal
 
 
 object Wazup {
-  def wazup(s3Client: S3Client, systemsManagerClient: SsmAsyncClient, bucket: String, bucketPath: String, confPath: String, parameterPrefix: String): ZIO[Console with Blocking, Serializable, Unit] = {
+  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, bucket: String, bucketPath: String, confPath: String, parameterPrefix: String): ZIO[Console with Blocking, Serializable, Unit] = {
     val result = for {
       configFiles <- fetchFiles(s3Client, bucket, bucketPath)
-      parameters <- fetchParameters(systemsManagerClient, parameterPrefix)
+      parameters <- fetchParameters(ssmClient, parameterPrefix)
       wazuhParameters = Logic.parseParameters(parameters, parameterPrefix)
       // TODO: add validate parameters step and log to CloudWatch the result
       nodeAddress <- Logic.getNodeAddress
@@ -29,8 +29,6 @@ object Wazup {
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       // TODO: add CloudWatch logging step here
       _ <- ZIO.when(shouldUpdate)(writeConf(confPath, newConf))
-      // TODO: check ZIO will wait for the conf to be written before restarting
-      // TODO: add CloudWatch logging step here
       returnCode <- ZIO.when(shouldUpdate)(restartWazuh())
     } yield returnCode
 
@@ -83,7 +81,6 @@ object Wazup {
     }).mapError(_.mkString(" "))
   }
 
-  // should only be called if the conf has changed and should ideally return the status code
   // TODO: check if sudo is needed to restart and work out how to avoid running as root
   def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
     Command("systemctl", "restart", "wazuh-manager").run

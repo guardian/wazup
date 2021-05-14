@@ -24,7 +24,7 @@ object AWS {
       .build()
   }
 
-  def systemsManagerClient(profile: String, region: Region): SsmAsyncClient = {
+  def ssmClient(profile: String, region: Region): SsmAsyncClient = {
     SsmAsyncClient.builder()
       .credentialsProvider(credentialsProvider(profile))
       .region(region)
