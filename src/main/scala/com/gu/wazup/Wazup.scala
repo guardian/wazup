@@ -81,7 +81,6 @@ object Wazup {
     }).mapError(_.mkString(" "))
   }
 
-  // TODO: check if sudo is needed to restart and work out how to avoid running as root
   def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
     Command("systemctl", "restart", "wazuh-manager").run
       .flatMap(process => process.exitCode)
