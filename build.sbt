@@ -28,6 +28,7 @@ lazy val root = (project in file("."))
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.scalatest" %% "scalatest" % "3.2.2" % Test
     ),
+    daemonGroup in Linux := "ossec",
     serverLoading in Debian := Some(Systemd),
     debianPackageDependencies := Seq("java8-runtime-headless"),
     maintainer in Debian := "Security Engineering",
