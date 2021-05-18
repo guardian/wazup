@@ -1,7 +1,8 @@
+import com.typesafe.sbt.packager.archetypes.systemloader.ServerLoader.Systemd
+
 ThisBuild / scalaVersion     := "2.13.4"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "com.gu"
-ThisBuild / organizationName := "example"
 ThisBuild / scalacOptions ++= Seq(
   "-Xfatal-warnings",
   "-encoding", "UTF-8",
@@ -14,6 +15,7 @@ ThisBuild / scalacOptions ++= Seq(
 val awsSdkVersion = "2.16.25"
 
 lazy val root = (project in file("."))
+  .enablePlugins(JavaServerAppPackaging, JDebPackaging, SystemdPlugin)
   .settings(
     name := "wazup",
     libraryDependencies ++= Seq(
@@ -25,5 +27,10 @@ lazy val root = (project in file("."))
       "software.amazon.awssdk" % "cloudwatch" % awsSdkVersion,
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.scalatest" %% "scalatest" % "3.2.2" % Test
-    )
+    ),
+    serverLoading in Debian := Some(Systemd),
+    debianPackageDependencies := Seq("java8-runtime-headless"),
+    maintainer in Debian := "Security Engineering",
+    packageSummary in Debian := "Wazup: Automatically update Wazuh configuration",
+    packageDescription in Debian := "Wazup: Automatically update Wazuh configuration",
   )
