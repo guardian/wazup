@@ -1,8 +1,10 @@
 import com.typesafe.sbt.packager.archetypes.systemloader.ServerLoader.Systemd
 
 ThisBuild / scalaVersion     := "2.13.4"
-ThisBuild / version          := "0.1.0"
+ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.gu"
+ThisBuild / organizationName := "The Guardian"
+
 ThisBuild / scalacOptions ++= Seq(
   "-Xfatal-warnings",
   "-encoding", "UTF-8",
@@ -28,9 +30,12 @@ lazy val root = (project in file("."))
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.scalatest" %% "scalatest" % "3.2.2" % Test
     ),
-    daemonGroup in Linux := "ossec",
     serverLoading in Debian := Some(Systemd),
     debianPackageDependencies := Seq("java8-runtime-headless"),
+    // daemonUser and daemonGroup must be scoped to Linux to be applied
+    // membership of ossec gives wazup permission to modify /var/ossec/
+    daemonGroup in Linux := "ossec",
+
     maintainer in Debian := "Security Engineering",
     packageSummary in Debian := "Wazup: Automatically update Wazuh configuration",
     packageDescription in Debian := "Wazup: Automatically update Wazuh configuration",
