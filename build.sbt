@@ -23,6 +23,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % "1.0.5",
       "dev.zio" %% "zio-process" % "0.3.0",
+      "joda-time" % "joda-time" % "2.10.6",
       "software.amazon.awssdk" % "s3" % awsSdkVersion,
       "software.amazon.awssdk" % "auth" % awsSdkVersion,
       "software.amazon.awssdk" % "ssm" % awsSdkVersion,

@@ -24,8 +24,8 @@ object Wazup {
       nodeAddress <- Logic.getNodeAddress
       nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
       wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, bucketPath))
-      newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress)
-      currentConf <- getCurrentConf(confPath)
+      newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress, Date.today)
+      currentConf <- getCurrentConf(configFiles.map(_.filename), bucketPath, confPath)
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       // TODO: add CloudWatch logging step here
       _ <- ZIO.when(shouldUpdate)(writeConf(confPath, newConf))
@@ -66,11 +66,11 @@ object Wazup {
     Logic.readFile(file).map(content => ConfigFile(file, content))
   }
 
-  def getCurrentConf(path: String): ZIO[Blocking, String, WazuhFiles] = {
+  def getCurrentConf(files: List[String], bucketPath: String, confPath: String): ZIO[Blocking, Serializable, WazuhFiles] = {
+    val filePaths = files.map(filename => filename.replace(bucketPath, confPath))
     for {
-      files <- Logic.listFiles(path)
-      configFiles <- ZIO.validatePar(files)(getFileContent).mapError(_.mkString(" "))
-      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, path))
+      (missingFiles, configFiles) <- ZIO.partitionPar(filePaths)(getFileContent)
+      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles.toList, confPath))
     } yield wazuhFiles
   }
 

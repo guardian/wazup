@@ -1,5 +1,6 @@
 package com.gu.wazup
 
+import org.joda.time.DateTime
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathResponse
 import zio.ZIO
 import zio.blocking.{Blocking, effectBlocking}
@@ -39,11 +40,13 @@ object Logic {
   }
 
   // TODO: ossec.conf should be valid XML, can we return XML or add a method to validate the conf?
-  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String): WazuhFiles = {
+  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String, currentDate: DateTime): WazuhFiles = {
+    val nodeName = s"${nodeType.toString.toLowerCase}-$nodeAddress"
     val newConf = wazuhFiles.ossecConf
-      .replaceAll("<node_name>.+</node_name>", s"<node_name>${nodeType.toString.toLowerCase}-$nodeAddress</node_name>")
+      .replaceAll("<node_name>.+</node_name>", s"<node_name>$nodeName</node_name>")
       .replaceAll("<key>.+</key>", s"<key>${parameters.wazuhClusterKey.getOrElse("")}</key>")
       .replaceAll("<node>.+</node>", s"<node>${parameters.coordinatorIP.getOrElse("")}</node>")
+      .replaceAll("<only_logs_after>.+</only_logs_after>", s"<only_logs_after>${Date.formatDate(Date.today)}</only_logs_after>")
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
   }
