@@ -6,7 +6,7 @@ import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.Blocking
 import zio.console.Console
-import zio.process.{Command, CommandError}
+import zio.process.Command
 import zio.{ExitCode, IO, ZIO}
 
 import scala.jdk.CollectionConverters._
@@ -66,11 +66,11 @@ object Wazup {
     Logic.readFile(file).map(content => ConfigFile(file, content))
   }
 
-  def getCurrentConf(files: List[String], bucketPath: String, confPath: String): ZIO[Blocking, Serializable, WazuhFiles] = {
+  def getCurrentConf(files: List[String], bucketPath: String, confPath: String): ZIO[Blocking, String, WazuhFiles] = {
     val filePaths = files.map(filename => filename.replace(bucketPath, confPath))
     for {
-      (missingFiles, configFiles) <- ZIO.partitionPar(filePaths)(getFileContent)
-      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles.toList, confPath))
+      configFiles <- ZIO.collectAllSuccessesPar(filePaths.map(getFileContent))
+      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, confPath))
     } yield wazuhFiles
   }
 
@@ -81,8 +81,9 @@ object Wazup {
     }).mapError(_.mkString(" "))
   }
 
-  def restartWazuh(): ZIO[Blocking, CommandError, ExitCode] = {
+  def restartWazuh(): ZIO[Blocking, String, ExitCode] = {
     Command("systemctl", "restart", "wazuh-manager").run
       .flatMap(process => process.exitCode)
+      .mapError(err => err.getMessage)
   }
 }
