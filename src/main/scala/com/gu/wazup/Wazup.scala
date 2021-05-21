@@ -1,6 +1,7 @@
 package com.gu.wazup
 
 import com.gu.wazup.aws.S3
+import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
@@ -14,8 +15,9 @@ import scala.jdk.FutureConverters._
 import scala.util.control.NonFatal
 
 
-object Wazup {
-  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, bucket: String, bucketPath: String, confPath: String, parameterPrefix: String): ZIO[Console with Blocking, Serializable, Unit] = {
+object Wazup extends LazyLogging {
+
+  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, bucket: String, bucketPath: String, confPath: String, parameterPrefix: String): ZIO[Console with Blocking, String, Unit] = {
     val result = for {
       configFiles <- fetchFiles(s3Client, bucket, bucketPath)
       parameters <- fetchParameters(ssmClient, parameterPrefix)
@@ -24,16 +26,18 @@ object Wazup {
       nodeAddress <- Logic.getNodeAddress
       nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
       wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, bucketPath))
+      _ <- IO(logger.info(s"Fetching new configuration for $nodeType $nodeAddress"))
       newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress, Date.today)
       currentConf <- getCurrentConf(configFiles.map(_.filename), bucketPath, confPath)
+      _ <- IO(logger.info(s"Reading current configuration for $nodeType $nodeAddress"))
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
-      // TODO: add CloudWatch logging step here
       _ <- ZIO.when(shouldUpdate)(writeConf(confPath, newConf))
-      returnCode <- ZIO.when(shouldUpdate)(restartWazuh())
-    } yield returnCode
+      _ <- ZIO.when(shouldUpdate)(restartWazuh())
+      // TODO: add CloudWatch logging step here
+    } yield logger.info(s"Run complete! restart required was: $shouldUpdate")
 
     // TODO: replace println with logging to CloudWatch
-    result.fold(err => println(err), identity)
+    result.fold(err => logger.error(err.toString), identity)
   }
 
   private def getConfigFile(client: S3Client, bucket: String, key: String): ZIO[Blocking, String, ConfigFile] = {

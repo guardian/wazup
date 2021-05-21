@@ -1,0 +1,32 @@
+<configuration>
+
+    <contextName>wazup</contextName>
+
+    <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/wazup.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/wazup.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss ZZZZ} %-5level %logger{0} %-16([%thread]) - %msg%n%xException{3}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %logger{0} %-16([%thread]) - %msg%n%xException{3}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.gu.wazup" level="TRACE" />
+    <logger name="software.amazon" level="WARN" />
+
+    <root level="INFO">
+        <appender-ref ref="LOGFILE"/>
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>
