@@ -21,11 +21,11 @@ object Logic {
 
     WazuhParameters(
       // TODO: should missing parameters raise an exception?
-      parameters.get("wazuhClusterKey"),
-      parameters.get("coordinatorIP"),
-      parameters.get("cloudtrailRoleArn"),
-      parameters.get("guarddutyRoleArn"),
-      parameters.get("umbrellaRoleArn"),
+      parameters.get("cluster-key"),
+      parameters.get("leader-address"),
+      parameters.get("cloudtrail-role-arn"),
+      parameters.get("guardduty-role-arn"),
+      parameters.get("umbrella-role-arn"),
     )
   }
 
@@ -44,8 +44,8 @@ object Logic {
     val nodeName = s"${nodeType.toString.toLowerCase}-$nodeAddress"
     val newConf = wazuhFiles.ossecConf
       .replaceAll("<node_name>.+</node_name>", s"<node_name>$nodeName</node_name>")
-      .replaceAll("<key>.+</key>", s"<key>${parameters.wazuhClusterKey.getOrElse("")}</key>")
-      .replaceAll("<node>.+</node>", s"<node>${parameters.coordinatorIP.getOrElse("")}</node>")
+      .replaceAll("<key>.+</key>", s"<key>${parameters.clusterKey.getOrElse("")}</key>")
+      .replaceAll("<node>.+</node>", s"<node>${parameters.leaderAddress.getOrElse("")}</node>")
       .replaceAll("<only_logs_after>.+</only_logs_after>", s"<only_logs_after>${Date.formatDate(Date.today)}</only_logs_after>")
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
@@ -56,7 +56,7 @@ object Logic {
   }
 
   def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
-    if (parameters.coordinatorIP.contains(instanceIp)) Leader
+    if (parameters.leaderAddress.contains(instanceIp)) Leader
     else Worker
   }
 
