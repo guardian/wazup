@@ -5,6 +5,13 @@ sealed trait NodeType
 case object Leader extends NodeType
 case object Worker extends NodeType
 
+case class Configuration(
+  bucket: String,
+  bucketPath: String,
+  parameterPrefix: String,
+  confPath: String,
+)
+
 case class WazuhConf(
   wazuhParameters: WazuhParameters,
   wazuhFiles: WazuhFiles,

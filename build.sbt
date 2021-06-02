@@ -21,6 +21,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "wazup",
     libraryDependencies ++= Seq(
+      "com.typesafe" % "config" % "1.4.1",
       "dev.zio" %% "zio" % "1.0.5",
       "dev.zio" %% "zio-process" % "0.3.0",
       "joda-time" % "joda-time" % "2.10.6",

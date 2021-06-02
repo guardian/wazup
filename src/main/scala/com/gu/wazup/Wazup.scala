@@ -17,21 +17,21 @@ import scala.util.control.NonFatal
 
 object Wazup extends LazyLogging {
 
-  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, bucket: String, bucketPath: String, confPath: String, parameterPrefix: String): ZIO[Console with Blocking, String, Unit] = {
+  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, config: Configuration): ZIO[Console with Blocking, String, Unit] = {
     val result = for {
-      configFiles <- fetchFiles(s3Client, bucket, bucketPath)
-      parameters <- fetchParameters(ssmClient, parameterPrefix)
-      wazuhParameters = Logic.parseParameters(parameters, parameterPrefix)
+      configFiles <- fetchFiles(s3Client, config.bucket, config.bucketPath)
+      parameters <- fetchParameters(ssmClient, config.parameterPrefix)
+      wazuhParameters = Logic.parseParameters(parameters, config.parameterPrefix)
       // TODO: add validate parameters step and log to CloudWatch the result
       nodeAddress <- Logic.getNodeAddress
       nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
-      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, bucketPath))
+      wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, config.bucketPath))
       _ <- IO(logger.info(s"Fetching new configuration for $nodeType $nodeAddress"))
       newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress, Date.today)
-      currentConf <- getCurrentConf(configFiles.map(_.filename), bucketPath, confPath)
+      currentConf <- getCurrentConf(configFiles.map(_.filename), config.bucketPath, config.confPath)
       _ <- IO(logger.info(s"Reading current configuration for $nodeType $nodeAddress"))
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
-      _ <- ZIO.when(shouldUpdate)(writeConf(confPath, newConf))
+      _ <- ZIO.when(shouldUpdate)(writeConf(config.confPath, newConf))
       _ <- ZIO.when(shouldUpdate)(restartWazuh())
       // TODO: add CloudWatch logging step here
     } yield logger.info(s"Run complete! restart required was: $shouldUpdate")
