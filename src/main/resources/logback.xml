@@ -11,13 +11,13 @@
         </rollingPolicy>
 
         <encoder>
-            <pattern>%date{yyyy-MM-dd HH:mm:ss ZZZZ} %-5level %logger{0} %-16([%thread]) - %msg%n%xException{3}</pattern>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss ZZZZ} %-5level %logger{0} %-22([%thread]) - %msg%n%xException{3}</pattern>
         </encoder>
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %logger{0} %-16([%thread]) - %msg%n%xException{3}</pattern>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %logger{0} %-22([%thread]) - %msg%n%xException{3}</pattern>
         </encoder>
     </appender>
 

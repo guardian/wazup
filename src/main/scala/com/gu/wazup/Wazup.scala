@@ -36,7 +36,6 @@ object Wazup extends LazyLogging {
       // TODO: add CloudWatch logging step here
     } yield logger.info(s"Run complete! restart required was: $shouldUpdate")
 
-    // TODO: replace println with logging to CloudWatch
     result.fold(err => logger.error(err.toString), identity)
   }
 
