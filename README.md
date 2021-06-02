@@ -15,7 +15,26 @@ Additionally, the configuration can be kept under version control and follow a c
 
 Wazup removes the requirement for anyone to ssh onto an instance to change the configuration.
 
-## Deploying Wazup
+## Development
+
+You will need to create a local configuration file; ideally in an alternative directory to minimise the risk of it being committed to the repository.
+
+The configuration can use HOCON format and requires the following entries:
+
+```
+wazup {
+  bucket = ???
+  bucketPath = ???
+  parameterPrefix = ???
+  confPath = ???
+}
+```
+
+Run Wazup with sbt and provide the path to the local configuration file:
+
+    sbt -Dconfig.file=<PATH>/wazup.local.conf run
+
+## Deployment
 
 Wazup does not yet have automated builds or deployment.
 
