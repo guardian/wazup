@@ -1,6 +1,7 @@
 package com.gu.wazup
 
 import com.gu.wazup.aws.S3
+import com.gu.wazup.model.{ConfigFile, Configuration, WazuhFiles}
 import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
@@ -24,12 +25,11 @@ object Wazup extends LazyLogging {
       wazuhParameters = Logic.parseParameters(parameters, config.parameterPrefix)
       // TODO: add validate parameters step and log to CloudWatch the result
       nodeAddress <- Logic.getNodeAddress
-      nodeType = Logic.getNodeType(nodeAddress, wazuhParameters)
       wazuhFiles <- IO.fromEither(Logic.getWazuhFiles(configFiles, config.bucketPath))
-      _ <- IO(logger.info(s"Fetching new configuration for $nodeType $nodeAddress"))
-      newConf = Logic.createConf(wazuhFiles, wazuhParameters, nodeType, nodeAddress, Date.today)
+      _ <- IO(logger.info(s"Fetching new configuration for ${config.nodeType} $nodeAddress"))
+      newConf = Logic.createConf(wazuhFiles, wazuhParameters, config.nodeType, nodeAddress, Date.today)
       currentConf <- getCurrentConf(configFiles.map(_.filename), config.bucketPath, config.confPath)
-      _ <- IO(logger.info(s"Reading current configuration for $nodeType $nodeAddress"))
+      _ <- IO(logger.info(s"Reading current configuration for ${config.nodeType} $nodeAddress"))
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
       _ <- ZIO.when(shouldUpdate)(writeConf(config.confPath, newConf))
       _ <- ZIO.when(shouldUpdate)(restartWazuh())

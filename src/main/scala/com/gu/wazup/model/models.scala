@@ -1,11 +1,11 @@
-package com.gu.wazup
-
+package com.gu.wazup.model
 
 sealed trait NodeType
 case object Leader extends NodeType
 case object Worker extends NodeType
 
 case class Configuration(
+  nodeType: NodeType,
   bucket: String,
   bucketPath: String,
   parameterPrefix: String,
