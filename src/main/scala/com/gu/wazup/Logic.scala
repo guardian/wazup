@@ -23,9 +23,6 @@ object Logic {
       // TODO: should missing parameters raise an exception?
       parameters.get("cluster-key"),
       parameters.get("leader-address"),
-      parameters.get("cloudtrail-role-arn"),
-      parameters.get("guardduty-role-arn"),
-      parameters.get("umbrella-role-arn"),
     )
   }
 
@@ -40,13 +37,13 @@ object Logic {
   }
 
   // TODO: ossec.conf should be valid XML, can we return XML or add a method to validate the conf?
-  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String, currentDate: DateTime): WazuhFiles = {
+  def createConf(wazuhFiles: WazuhFiles, parameters: WazuhParameters, nodeType: NodeType, nodeAddress: String, logsAfter: DateTime): WazuhFiles = {
     val nodeName = s"${nodeType.toString.toLowerCase}-$nodeAddress"
     val newConf = wazuhFiles.ossecConf
       .replaceAll("<node_name>.+</node_name>", s"<node_name>$nodeName</node_name>")
       .replaceAll("<key>.+</key>", s"<key>${parameters.clusterKey.getOrElse("")}</key>")
       .replaceAll("<node>.+</node>", s"<node>${parameters.leaderAddress.getOrElse("")}</node>")
-      .replaceAll("<only_logs_after>.+</only_logs_after>", s"<only_logs_after>${Date.formatDate(Date.today)}</only_logs_after>")
+      .replaceAll("<only_logs_after>.+</only_logs_after>", s"<only_logs_after>${Date.formatDate(logsAfter)}</only_logs_after>")
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
   }
