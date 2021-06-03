@@ -1,5 +1,6 @@
 package com.gu.wazup
 
+import com.gu.wazup.model._
 import org.joda.time.DateTime
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathResponse
 import zio.ZIO
@@ -52,11 +53,8 @@ object Logic {
     effectBlocking(InetAddress.getLocalHost.getHostAddress).refineOrDie(_.getMessage)
   }
 
-  def getNodeType(instanceIp: String, parameters: WazuhParameters): NodeType = {
-    if (parameters.leaderAddress.contains(instanceIp)) Leader
-    else Worker
-  }
-
+  // Only one node in the cluster needs to ingest logs from GCP and AWS
+  // The GCP and AWS wodle sections are therefore removed for the Workers
   def configureWorker(ossecConf: String): String = {
     ossecConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
       .replaceAll("[\\s]*<gcp-pubsub>(?s)(.*)</gcp-pubsub>", "")

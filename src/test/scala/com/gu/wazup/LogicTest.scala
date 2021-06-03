@@ -1,5 +1,6 @@
 package com.gu.wazup
 
+import com.gu.wazup.model.{ConfigFile, Leader, WazuhFiles, WazuhParameters, Worker}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -22,17 +23,6 @@ class LogicTest extends AnyFreeSpec with Matchers {
         Some("FAKEKEY"), Some("10.0.0.1"))
 
       Logic.parseParameters(response, "/wazuh/TEST/") shouldEqual expected
-    }
-  }
-
-  "getNodeType" - {
-    val parameters = WazuhParameters(None, Some("10.0.0.1"))
-
-    "returns Leader when the addresses match" in {
-      Logic.getNodeType("10.0.0.1", parameters) shouldEqual Leader
-    }
-    "returns Worker when the addresses are different" in {
-      Logic.getNodeType("10.0.0.2", parameters) shouldEqual Worker
     }
   }
 

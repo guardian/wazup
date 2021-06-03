@@ -23,6 +23,7 @@ The configuration can use HOCON format and requires the following entries:
 
 ```
 wazup {
+  nodeType = ???
   bucket = ???
   bucketPath = ???
   parameterPrefix = ???
