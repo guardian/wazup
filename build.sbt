@@ -33,6 +33,10 @@ lazy val root = (project in file("."))
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "org.scalatest" %% "scalatest" % "3.2.2" % Test
     ),
+    javaOptions in Universal ++= Seq(
+      s"-Dpidfile.path=/dev/null",
+      s"-Dconfig.file=/etc/gu/wazup.conf",
+    ),
     serverLoading in Debian := Some(Systemd),
     debianPackageDependencies := Seq("java8-runtime-headless"),
     // daemonUser and daemonGroup must be scoped to Linux to be applied
