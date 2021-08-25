@@ -31,8 +31,9 @@ object Wazup extends LazyLogging {
       currentConf <- getCurrentConf(configFiles.map(_.filename), config.bucketPath, config.confPath)
       _ <- IO(logger.info(s"Reading current configuration for ${config.nodeType} $nodeAddress"))
       shouldUpdate = Logic.hasChanges(newConf, currentConf)
+      notRunning <- Logic.notRunning()
       _ <- ZIO.when(shouldUpdate)(writeConf(config.confPath, newConf))
-      _ <- ZIO.when(shouldUpdate)(restartWazuh().map(ec => logger.info(s"Restart returned ExitCode: ${ec.code}")))
+      _ <- ZIO.when(shouldUpdate || notRunning)(restartWazuh().map(ec => logger.info(s"Restart returned ExitCode: ${ec.code}")))
       // TODO: add CloudWatch logging step here
     } yield logger.info(s"Run complete! restart required was: $shouldUpdate")
 
