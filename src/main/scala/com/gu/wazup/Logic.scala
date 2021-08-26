@@ -69,8 +69,8 @@ object Logic {
   }
 
   def notRunning(): ZIO[Blocking, String, Boolean] = {
-    Command("systemctl", "status", "wazuh-manager").successfulExitCode
-      .mapEffect(process => process.code == 0)
+    Command("systemctl", "status", "wazuh-manager").exitCode
+      .mapEffect(process => process.code != 0)
       .mapError(err => err.getMessage)
   }
 
