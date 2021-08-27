@@ -1,13 +1,15 @@
 package com.gu.wazup
 
+import java.io.{BufferedWriter, File, FileWriter}
+import java.net.InetAddress
+
 import com.gu.wazup.model._
 import org.joda.time.DateTime
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathResponse
 import zio.ZIO
 import zio.blocking.{Blocking, effectBlocking}
+import zio.process.Command
 
-import java.io.{BufferedWriter, File, FileWriter}
-import java.net.InetAddress
 import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -64,6 +66,12 @@ object Logic {
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
     incoming.ossecConf != current.ossecConf ||
       incoming.otherConf.toSeq.sorted != current.otherConf.toSeq.sorted
+  }
+
+  def notRunning(): ZIO[Blocking, String, Boolean] = {
+    Command("systemctl", "status", "wazuh-manager").exitCode
+      .mapEffect(process => process.code != 0)
+      .mapError(err => err.getMessage)
   }
 
   def readFile(filePath: String): ZIO[Blocking, String, String] = {
