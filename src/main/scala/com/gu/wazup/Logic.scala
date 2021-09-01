@@ -26,6 +26,7 @@ object Logic {
       // TODO: should missing parameters raise an exception?
       parameters.get("cluster-key"),
       parameters.get("leader-address"),
+      parameters.get("hive-param-path")
     )
   }
 
@@ -47,6 +48,7 @@ object Logic {
       .replaceAll("<key>.+</key>", s"<key>${parameters.clusterKey.getOrElse("")}</key>")
       .replaceAll("<node>.+</node>", s"<node>${parameters.leaderAddress.getOrElse("")}</node>")
       .replaceAll("<only_logs_after>.+</only_logs_after>", s"<only_logs_after>${Date.formatDate(logsAfter)}</only_logs_after>")
+      .replaceAll("<api_key>.+</api_key>", s"<api_key>${parameters.hiveParamPath.getOrElse("")}</api_key>")
     if (nodeType == Worker) wazuhFiles.copy(ossecConf = configureWorker(newConf))
     else wazuhFiles.copy(ossecConf = newConf)
   }
