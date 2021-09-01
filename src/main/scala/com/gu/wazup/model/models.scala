@@ -20,6 +20,7 @@ case class WazuhConf(
 case class WazuhParameters(
   clusterKey: Option[String],
   leaderAddress: Option[String],
+  hiveParamPath: Option[String],
 )
 
 case class WazuhFiles(

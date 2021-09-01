@@ -17,10 +17,11 @@ class LogicTest extends AnyFreeSpec with Matchers {
         GetParametersByPathResponse.builder().parameters(
           Parameter.builder().name("/wazuh/TEST/cluster-key").value("FAKEKEY").build(),
           Parameter.builder().name("/wazuh/TEST/leader-address").value("10.0.0.1").build(),
+          Parameter.builder().name("/wazuh/TEST/hive-param-path").value("/hive/CODE/thehive").build(),
         ).build()
       }
       val expected = WazuhParameters(
-        Some("FAKEKEY"), Some("10.0.0.1"))
+        Some("FAKEKEY"), Some("10.0.0.1"), Some("/hive/CODE/thehive"))
 
       Logic.parseParameters(response, "/wazuh/TEST/") shouldEqual expected
     }
@@ -45,6 +46,7 @@ class LogicTest extends AnyFreeSpec with Matchers {
     val parameters: WazuhParameters = WazuhParameters(
       Some("12345FAKEKEY"),
       Some("10.0.0.1"),
+      Some("/hive/CODE/thehive")
     )
 
     "generates the correct configuration for a Leader" in {
