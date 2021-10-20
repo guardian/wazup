@@ -5,6 +5,8 @@ import com.gu.wazup.model.{ConfigFile, Configuration, WazuhFiles}
 import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient
 import software.amazon.awssdk.services.ssm.model.{GetParametersByPathRequest, GetParametersByPathResponse}
 import zio.blocking.Blocking
 import zio.console.Console
@@ -18,7 +20,7 @@ import scala.util.control.NonFatal
 
 object Wazup extends LazyLogging {
 
-  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, config: Configuration): ZIO[Console with Blocking, String, Unit] = {
+  def wazup(s3Client: S3Client, ssmClient: SsmAsyncClient, cwClient: CloudWatchAsyncClient, ec2Client: Ec2AsyncClient, config: Configuration): ZIO[Console with Blocking, String, Unit] = {
     val result = for {
       configFiles <- fetchFiles(s3Client, config.bucket, config.bucketPath)
       parameters <- fetchParameters(ssmClient, config.parameterPrefix)
