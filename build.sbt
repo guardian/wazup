@@ -29,6 +29,7 @@ lazy val root = (project in file("."))
       "software.amazon.awssdk" % "auth" % awsSdkVersion,
       "software.amazon.awssdk" % "ssm" % awsSdkVersion,
       "software.amazon.awssdk" % "cloudwatch" % awsSdkVersion,
+      "software.amazon.awssdk" % "ec2" % awsSdkVersion,
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.3",
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "org.scalatest" %% "scalatest" % "3.2.2" % Test
