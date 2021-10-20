@@ -76,6 +76,12 @@ object Logic {
       .mapError(err => err.getMessage)
   }
 
+  def configValid(): ZIO[Blocking, String, Boolean] = {
+    Command("/var/ossec/bin/ossec-logtest", "-t").exitCode
+      .mapEffect(process => process.code != 0)
+      .mapError(err => err.getMessage)
+  }
+
   def readFile(filePath: String): ZIO[Blocking, String, String] = {
     effectBlocking {
       val file = new File(filePath)
