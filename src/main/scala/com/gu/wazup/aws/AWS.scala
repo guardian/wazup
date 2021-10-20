@@ -4,6 +4,7 @@ import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, Ins
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 
 
@@ -33,6 +34,13 @@ object AWS {
 
   def cloudwatchClient(profile: String, region: Region): CloudWatchAsyncClient = {
     CloudWatchAsyncClient.builder()
+      .credentialsProvider(credentialsProvider(profile))
+      .region(region)
+      .build()
+  }
+
+  def ec2Client(profile: String, region: Region): Ec2AsyncClient = {
+    Ec2AsyncClient.builder()
       .credentialsProvider(credentialsProvider(profile))
       .region(region)
       .build()
