@@ -41,7 +41,7 @@ lazy val root = (project in file("."))
     debianPackageDependencies := Seq("java8-runtime-headless"),
     // daemonUser and daemonGroup must be scoped to Linux to be applied
     // membership of ossec gives wazup permission to modify /var/ossec/
-    daemonGroup in Linux := "ossec",
+    daemonGroup in Linux := "wazuh",
 
     maintainer in Debian := "Security Engineering",
     packageSummary in Debian := "Wazup: Automatically update Wazuh configuration",
