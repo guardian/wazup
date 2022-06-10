@@ -63,6 +63,8 @@ object Logic {
     ossecConf.replace("<node_type>master</node_type>", "<node_type>worker</node_type>")
       .replaceAll("[\\s]*<gcp-pubsub>(?s)(.*)</gcp-pubsub>", "")
       .replaceAll("[\\s]*<wodle name=\"aws-s3\">(?s)(.*)</wodle>", "")
+      .replaceAll("[\\s]*<wodle name=\"azure-logs\">(?s)(.*)</wodle>", "")
+      .replaceAll("[\\s]*<geoipdb>(?s)(.*)</geoipdb>", "")
   }
 
   def hasChanges(incoming: WazuhFiles, current: WazuhFiles): Boolean = {
